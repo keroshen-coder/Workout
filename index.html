@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Workout Interval & Audio Cue Tracker</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent-work: #22c55e;
+      --accent-rest: #f59e0b;
+      --accent-calories: #ec4899;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Navigation */
+    .view-nav {
+      display: flex;
+      background: var(--card-bg);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      gap: 4px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 8px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .nav-btn.active {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    /* Mode Selector */
+    .tabs {
+      display: flex;
+      background: rgba(30, 41, 59, 0.6);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: #334155;
+      color: var(--text-main);
+    }
+
+    /* Week Selector for C25K */
+    .week-selector-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid var(--card-border);
+      padding: 8px 10px;
+      border-radius: 10px;
+    }
+
+    .week-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .week-pills {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .week-pill {
+      flex: 1;
+      min-width: 48px;
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .week-pill.active {
+      background: var(--primary);
+      color: #0f172a;
+      border-color: var(--primary);
+    }
+
+    /* Timer Card */
+    .timer-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .meta-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge-work { background: rgba(34, 197, 94, 0.2); color: var(--accent-work); border: 1px solid var(--accent-work); }
+    .badge-rest { background: rgba(245, 158, 11, 0.2); color: var(--accent-rest); border: 1px solid var(--accent-rest); }
+    .badge-prep { background: rgba(56, 189, 248, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+
+    .live-cal-pill {
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid var(--accent-calories);
+      color: var(--accent-calories);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+
+    .exercise-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+
+    .exercise-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      min-height: 18px;
+    }
+
+    .edit-step-btn {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    /* Circular Timer */
+    .timer-display-wrap {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .progress-ring__circle-bg { stroke: var(--card-border); }
+    .progress-ring__circle {
+      stroke: var(--primary);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    }
+
+    .time-readout {
+      position: relative;
+      font-size: 46px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Up Next Card */
+    .up-next-card {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px dashed var(--card-border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .up-next-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-align: left;
+    }
+
+    .up-next-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      text-align: left;
+    }
+
+    .up-next-duration {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Controls */
+    .control-row {
+      display: flex;
+      width: 100%;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary { background: var(--primary); color: #0f172a; flex: 1.4; }
+    .btn-primary:active { background: var(--primary-hover); transform: scale(0.98); }
+    .btn-secondary { background: #334155; color: var(--text-main); }
+    .btn-secondary:active { background: #475569; transform: scale(0.98); }
+
+    /* Modal for Editing */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .modal-title { font-size: 16px; font-weight: 800; }
+    .input-group { display: flex; flex-direction: column; gap: 4px; }
+    .input-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+    .input-group input { background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; color: var(--text-main); padding: 10px; font-size: 14px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+    /* Stats View */
+    .dashboard-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .filter-pills { display: flex; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 10px; }
+    .filter-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; }
+    .filter-btn.active { background: var(--primary); color: #0f172a; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .summary-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); padding: 12px 8px; border-radius: 12px; text-align: center; }
+    .summary-value { font-size: 18px; font-weight: 800; color: var(--text-main); }
+    .summary-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-top: 2px; }
+    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+    .history-item { background: rgba(15, 23, 42, 0.4); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .history-item-title { font-size: 13px; font-weight: 700; }
+    .history-item-date { font-size: 11px; color: var(--text-muted); }
+    .history-item-stats { font-size: 12px; font-weight: 700; color: var(--primary); text-align: right; }
+
+    /* Footer */
+    .stats-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .weight-chip {
+      background: #334155;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-main);
+      border: none;
+      font-size: 11px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="view-nav">
+      <button class="nav-btn active" id="nav-timer" onclick="switchView('timer')">⏱️ Timer</button>
+      <button class="nav-btn" id="nav-stats" onclick="switchView('stats')">📊 Progress & Log</button>
+    </div>
+
+    <div id="view-timer-container" style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-hotel" onclick="switchWorkoutMode('hotel')">45m Hotel Strength</button>
+        <button class="tab-btn" id="tab-c25k" onclick="switchWorkoutMode('c25k')">C25K Run/Walk</button>
+        <button class="tab-btn" id="tab-custom" onclick="switchWorkoutMode('custom')">Quick Interval</button>
+      </div>
+
+      <div id="c25k-week-selector" class="week-selector-wrap" style="display: none;">
+        <div class="week-label">Select C25K Progression Week:</div>
+        <div class="week-pills">
+          <button class="week-pill active" id="wp-1" onclick="selectC25KWeek(1)">W1 (5/2)</button>
+          <button class="week-pill" id="wp-2" onclick="selectC25KWeek(2)">W2 (6/2)</button>
+          <button class="week-pill" id="wp-3" onclick="selectC25KWeek(3)">W3 (8/2)</button>
+          <button class="week-pill" id="wp-4" onclick="selectC25KWeek(4)">W4 (10/1.5)</button>
+          <button class="week-pill" id="wp-5" onclick="selectC25KWeek(5)">W5 (15/2/10)</button>
+          <button class="week-pill" id="wp-6" onclick="selectC25KWeek(6)">W6 (20/1/10)</button>
+          <button class="week-pill" id="wp-7" onclick="selectC25KWeek(7)">5K Goal</button>
+        </div>
+      </div>
+
+      <div class="timer-card">
+        <div class="meta-bar">
+          <div id="badge-status" class="badge badge-prep">Get Ready</div>
+          <div id="live-calories" class="live-cal-pill">🔥 0 kcal</div>
+        </div>
+
+        <div id="current-title" class="exercise-title">Warm-Up</div>
+        <div id="current-subtitle" class="exercise-subtitle">Prepare station and dumbbells</div>
+        <button class="edit-step-btn" onclick="openEditModal()">⚙️ Modify Exercise / Reps</button>
+
+        <div class="timer-display-wrap">
+          <svg class="progress-ring" width="190" height="190">
+            <circle class="progress-ring__circle-bg" stroke-width="10" fill="transparent" r="80" cx="95" cy="95" />
+            <circle id="progress-circle" class="progress-ring__circle" stroke-width="10" fill="transparent" r="80" cx="95" cy="95" />
+          </svg>
+          <div id="timer-text" class="time-readout">00:15</div>
+        </div>
+
+        <div class="up-next-card">
+          <div>
+            <div class="up-next-label">Up Next</div>
+            <div id="up-next-title" class="up-next-title">Set 1: Chin-ups</div>
+          </div>
+          <div id="up-next-duration" class="up-next-duration">2 reps (90s rest)</div>
+        </div>
+
+        <div class="control-row">
+          <button id="btn-prev" class="btn btn-secondary" onclick="prevStep()">❮ Prev</button>
+          <button id="btn-start" class="btn btn-primary" onclick="toggleTimer()">Start</button>
+          <button id="btn-next" class="btn btn-secondary" onclick="nextStep(false)">Next ❯</button>
+          <button id="btn-reset" class="btn btn-secondary" onclick="resetWorkout()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-stats-container" style="display: none;">
+      <div class="dashboard-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 16px; font-weight: 800;">Workout History</h2>
+          <button class="weight-chip" onclick="promptUserWeight()">⚖️ <span id="weight-display">175 lbs</span></button>
+        </div>
+
+        <div class="filter-pills">
+          <button class="filter-btn active" id="filter-day" onclick="renderStats('day')">Today</button>
+          <button class="filter-btn" id="filter-week" onclick="renderStats('week')">This Week</button>
+          <button class="filter-btn" id="filter-month" onclick="renderStats('month')">This Month</button>
+          <button class="filter-btn" id="filter-all" onclick="renderStats('all')">All Time</button>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div id="stat-workouts" class="summary-value">0</div>
+            <div class="summary-label">Workouts</div>
+          </div>
+          <div class="summary-box">
+            <div id="stat-time" class="summary-value">0m</div>
+            <div class="summary-label">Active Time</div>
+          </div>
+          <div class="summary-box">
+            <div id="stat-calories" class="summary-value" style="color: var(--accent-calories);">0</div>
+            <div class="summary-label">Est. Calories</div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 13px; color: var(--text-muted); text-transform: uppercase;">Session History</h3>
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </div>
+
+    <div class="stats-footer">
+      <span id="step-counter">Step 1 of 32</span>
+      <span id="total-time">Elapsed: 00:00</span>
+      <button id="sound-btn" class="weight-chip" onclick="toggleAudio()">🔊 Sound ON</button>
+    </div>
+  </div>
+
+  <div id="edit-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-title">Modify Exercise Target</div>
+      <div class="input-group">
+        <label>Exercise Name</label>
+        <input type="text" id="modal-edit-name" />
+      </div>
+      <div class="input-group">
+        <label>Target Reps / Focus Details</label>
+        <input type="text" id="modal-edit-sub" placeholder="e.g. 10-12 push ups" />
+      </div>
+      <div class="input-group">
+        <label>Duration (Seconds)</label>
+        <input type="number" id="modal-edit-dur" min="5" step="5" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveExerciseEdit()">Save Target</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio & Speech Synthesis Engine
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type, duration, count = 1, gap = 0.1) {
+      if (!soundEnabled) return;
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      for (let i = 0; i < count; i++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * gap));
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime + (i * gap));
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (i * gap) + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + (i * gap));
+        osc.stop(audioCtx.currentTime + (i * gap) + duration);
+      }
+    }
+
+    function speakText(text) {
+      if (!soundEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel(); // Stop any pending speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function alertMinute() { playTone(587.33, 'sine', 0.25); }
+    
+    function alert30sWarning() {
+      playTone(440, 'triangle', 0.15, 2, 0.15); // Chime first
+      // Speak next exercise after a short 400ms pause
+      const next = currentProgram[stepIndex + 1];
+      if (next && next.duration > 0) {
+        setTimeout(() => {
+          speakText(`Up next: ${next.name}. ${next.subtitle || ''}`);
+        }, 400);
+      }
+    }
+    
+    function alertCountdown() { playTone(392, 'square', 0.08); }
+    function alertTransition() { playTone(880, 'sine', 0.4); }
+
+    // Programs
+    const hotelProgram = [
+      { name: "Get Ready", subtitle: "Prepare station & dumbbells", duration: 15, type: "prep", met: 2 },
+      { name: "Chin-ups: Set 1", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90s Neurological recovery", duration: 90, type: "rest", met: 2 },
+      { name: "Chin-ups: Set 2", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "Shake out arms", duration: 90, type: "rest", met: 2 },
+      { name: "Chin-ups: Set 3", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "Rest full duration", duration: 90, type: "rest", met: 2 },
+      { name: "Chin-ups: Set 4", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "Rest full duration", duration: 90, type: "rest", met: 2 },
+      { name: "Chin-ups: Set 5", subtitle: "2 strict reps (10 total!)", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "Prepare for dips", duration: 90, type: "rest", met: 2 },
+
+      { name: "Dips: Set 1", subtitle: "6-8 reps (slow descent)", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 2", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 3", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 4", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Phase Transition Rest", subtitle: "Set up Lat Pull-downs / Rows", duration: 120, type: "rest", met: 2 },
+
+      { name: "Lat Pull-downs (R1)", subtitle: "10-12 reps (3s slow return)", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit (R1)", subtitle: "60s hold (thighs parallel)", duration: 60, type: "work", met: 5.5 },
+      { name: "Superset Rest", subtitle: "Catch breath", duration: 60, type: "rest", met: 2 },
+
+      { name: "Lat Pull-downs (R2)", subtitle: "10-12 reps", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit (R2)", subtitle: "60s hold", duration: 60, type: "work", met: 5.5 },
+      { name: "Superset Rest", subtitle: "Shake out legs", duration: 60, type: "rest", met: 2 },
+
+      { name: "Lat Pull-downs (R3)", subtitle: "10-12 reps", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit (R3)", subtitle: "Final 60s hold!", duration: 60, type: "work", met: 5.5 },
+      { name: "Phase Transition Rest", subtitle: "Prep for Conditioning Finisher", duration: 120, type: "rest", met: 2 },
+
+      { name: "Push-ups", subtitle: "8-10 strict reps", duration: 25, type: "work", met: 7.0 },
+      { name: "Forearm Plank", subtitle: "90-Second Isometric Hold", duration: 90, type: "work", met: 5.0 },
+      { name: "Jump Rope / Burpees", subtitle: "50 jumps or 6 burpees", duration: 45, type: "work", met: 8.5 },
+      { name: "Workout Complete!", subtitle: "Great work! Session logged.", duration: 0, type: "prep", met: 1 }
+    ];
+
+    function buildC25KProgram(week) {
+      const warmUp = { name: "Warm-Up Walk", subtitle: "Brisk 5-minute walk", duration: 300, type: "prep", met: 3.5 };
+      const coolDown = { name: "Cool-Down Walk", subtitle: "Easy walk to bring heart rate down", duration: 180, type: "prep", met: 3.0 };
+      const finished = { name: "Run Complete!", subtitle: "Great endurance progress!", duration: 0, type: "prep", met: 1 };
+      
+      let intervals = [];
+      if (week === 1) {
+        for (let i = 1; i <= 4; i++) {
+          intervals.push({ name: `Run Interval ${i}/4`, subtitle: "Conversational slow pace", duration: 300, type: "work", met: 8.5 });
+          if (i < 4) intervals.push({ name: `Walk Recovery ${i}/4`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+        }
+      } else if (week === 2) {
+        for (let i = 1; i <= 3; i++) {
+          intervals.push({ name: `Run Interval ${i}/3`, subtitle: "Smooth rhythmic breathing", duration: 360, type: "work", met: 8.5 });
+          if (i < 3) intervals.push({ name: `Walk Recovery ${i}/3`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+        }
+      } else if (week === 3) {
+        for (let i = 1; i <= 3; i++) {
+          intervals.push({ name: `Run Interval ${i}/3`, subtitle: "Stay relaxed, light foot strikes", duration: 480, type: "work", met: 8.5 });
+          if (i < 3) intervals.push({ name: `Walk Recovery ${i}/3`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+        }
+      } else if (week === 4) {
+        intervals.push({ name: "Run Block 1/2", subtitle: "10 minutes steady run", duration: 600, type: "work", met: 8.5 });
+        intervals.push({ name: "Walk Recovery", subtitle: "90 seconds deep breathing", duration: 90, type: "rest", met: 3.5 });
+        intervals.push({ name: "Run Block 2/2", subtitle: "10 minutes steady run", duration: 600, type: "work", met: 8.5 });
+      } else if (week === 5) {
+        intervals.push({ name: "Run Block 1", subtitle: "15 minutes continuous", duration: 900, type: "work", met: 8.5 });
+        intervals.push({ name: "Walk Recovery", subtitle: "2 minutes active walk", duration: 120, type: "rest", met: 3.5 });
+        intervals.push({ name: "Run Block 2", subtitle: "10 minutes strong finish", duration: 600, type: "work", met: 8.5 });
+      } else if (week === 6) {
+        intervals.push({ name: "Run Block 1", subtitle: "20 minutes continuous endurance", duration: 1200, type: "work", met: 8.5 });
+        intervals.push({ name: "Walk Recovery", subtitle: "1 minute quick walk", duration: 60, type: "rest", met: 3.5 });
+        intervals.push({ name: "Run Block 2", subtitle: "10 minutes final push", duration: 600, type: "work", met: 8.5 });
+      } else if (week === 7) {
+        intervals.push({ name: "Continuous 5K Run", subtitle: "Pacing yourself through full 5K!", duration: 1800, type: "work", met: 8.5 });
+      }
+      return [warmUp, ...intervals, coolDown, finished];
+    }
+
+    const customProgram = [
+      { name: "Get Ready", subtitle: "Prepare for workout", duration: 10, type: "prep", met: 2 },
+      { name: "Interval 1 Work", subtitle: "Push hard with good form", duration: 45, type: "work", met: 6.5 },
+      { name: "Interval 1 Rest", subtitle: "Recover", duration: 15, type: "rest", met: 2 },
+      { name: "Interval 2 Work", subtitle: "Push hard with good form", duration: 45, type: "work", met: 6.5 },
+      { name: "Interval 2 Rest", subtitle: "Recover", duration: 15, type: "rest", met: 2 },
+      { name: "Interval 3 Work", subtitle: "Final round!", duration: 45, type: "work", met: 6.5 },
+      { name: "Finished", subtitle: "Session logged", duration: 0, type: "prep", met: 1 }
+    ];
+
+    // State
+    let currentMode = 'hotel';
+    let selectedC25KWeek = 1;
+    let currentProgram = JSON.parse(JSON.stringify(hotelProgram));
+    let stepIndex = 0;
+    let timeRemaining = currentProgram[0].duration;
+    let isRunning = false;
+    let timerInterval = null;
+    let totalSecondsElapsed = 0;
+    let currentSessionCalories = 0;
+    let wakeLock = null;
+
+    let userWeightLbs = parseFloat(localStorage.getItem('workout_user_weight')) || 175;
+
+    const circle = document.getElementById('progress-circle');
+    const radius = circle.r.baseVal.value;
+    const circumference = 2 * Math.PI * radius;
+    circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+    function setProgress(percent) {
+      const offset = circumference - (percent * circumference);
+      circle.style.strokeDashoffset = offset;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function calculateStepCalories(met, durationSec) {
+      const weightKg = userWeightLbs * 0.453592;
+      return (met * 3.5 * weightKg / 200) * (durationSec / 60);
+    }
+
+    function updateUI() {
+      const current = currentProgram[stepIndex];
+      const next = currentProgram[stepIndex + 1];
+
+      document.getElementById('current-title').textContent = current.name;
+      document.getElementById('current-subtitle').textContent = current.subtitle;
+      document.getElementById('timer-text').textContent = formatTime(timeRemaining);
+
+      const badge = document.getElementById('badge-status');
+      badge.className = `badge badge-${current.type}`;
+      badge.textContent = current.type === 'work' ? 'WORK' : (current.type === 'rest' ? 'REST' : 'INFO');
+      
+      const strokeColor = current.type === 'work' ? 'var(--accent-work)' : (current.type === 'rest' ? 'var(--accent-rest)' : 'var(--primary)');
+      circle.style.stroke = strokeColor;
+
+      if (next && next.duration > 0) {
+        document.getElementById('up-next-title').textContent = next.name;
+        document.getElementById('up-next-duration').textContent = `${formatTime(next.duration)} (${next.subtitle})`;
+      } else {
+        document.getElementById('up-next-title').textContent = "Session Complete";
+        document.getElementById('up-next-duration').textContent = "--";
+      }
+
+      const totalDuration = current.duration || 1;
+      setProgress(timeRemaining / totalDuration);
+      document.getElementById('step-counter').textContent = `Step ${stepIndex + 1} of ${currentProgram.length}`;
+      document.getElementById('total-time').textContent = `Elapsed: ${formatTime(totalSecondsElapsed)}`;
+      document.getElementById('live-calories').textContent = `🔥 ${Math.round(currentSessionCalories)} kcal`;
+      document.getElementById('weight-display').textContent = `${userWeightLbs} lbs`;
+    }
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {}
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock) { wakeLock.release(); wakeLock = null; }
+    }
+
+    function toggleTimer() {
+      initAudio();
+      if (isRunning) pauseTimer();
+      else startTimer();
+    }
+
+    function startTimer() {
+      if (stepIndex >= currentProgram.length - 1) resetWorkout();
+      isRunning = true;
+      document.getElementById('btn-start').textContent = "Pause";
+      document.getElementById('btn-start').style.background = "#f59e0b";
+      requestWakeLock();
+
+      timerInterval = setInterval(() => {
+        totalSecondsElapsed++;
+        timeRemaining--;
+
+        const activeMet = currentProgram[stepIndex].met || 4;
+        currentSessionCalories += calculateStepCalories(activeMet, 1);
+
+        if (timeRemaining > 0 && timeRemaining % 60 === 0) alertMinute();
+        if (timeRemaining === 30) alert30sWarning();
+        if (timeRemaining <= 3 && timeRemaining > 0) alertCountdown();
+
+        if (timeRemaining <= 0) {
+          nextStep(true);
+        } else {
+          updateUI();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      isRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('btn-start').textContent = "Resume";
+      document.getElementById('btn-start').style.background = "var(--primary)";
+      releaseWakeLock();
+    }
+
+    function nextStep(isAuto = false) {
+      if (isAuto) alertTransition();
+      if (stepIndex < currentProgram.length - 1) {
+        stepIndex++;
+        timeRemaining = currentProgram[stepIndex].duration;
+        updateUI();
+      } else {
+        finishWorkout();
+      }
+    }
+
+    function prevStep() {
+      if (stepIndex > 0) {
+        stepIndex--;
+        timeRemaining = currentProgram[stepIndex].duration;
+        updateUI();
+      }
+    }
+
+    function finishWorkout() {
+      pauseTimer();
+      document.getElementById('btn-start').textContent = "Start";
+      document.getElementById('timer-text').textContent = "DONE";
+      setProgress(0);
+      saveWorkoutLog();
+    }
+
+    function resetWorkout() {
+      if (totalSecondsElapsed > 60) saveWorkoutLog();
+      pauseTimer();
+      stepIndex = 0;
+      timeRemaining = currentProgram[0].duration;
+      totalSecondsElapsed = 0;
+      currentSessionCalories = 0;
+      document.getElementById('btn-start').textContent = "Start";
+      updateUI();
+    }
+
+    function openEditModal() {
+      const cur = currentProgram[stepIndex];
+      document.getElementById('modal-edit-name').value = cur.name;
+      document.getElementById('modal-edit-sub').value = cur.subtitle;
+      document.getElementById('modal-edit-dur').value = cur.duration;
+      document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+    }
+
+    function saveExerciseEdit() {
+      const cur = currentProgram[stepIndex];
+      cur.name = document.getElementById('modal-edit-name').value;
+      cur.subtitle = document.getElementById('modal-edit-sub').value;
+      const newDur = parseInt(document.getElementById('modal-edit-dur').value, 10);
+      if (!isNaN(newDur) && newDur > 0) {
+        cur.duration = newDur;
+        timeRemaining = newDur;
+      }
+      closeEditModal();
+      updateUI();
+    }
+
+    function selectC25KWeek(weekNum) {
+      selectedC25KWeek = weekNum;
+      document.querySelectorAll('.week-pill').forEach(p => p.classList.remove('active'));
+      const pill = document.getElementById(`wp-${weekNum}`);
+      if (pill) pill.classList.add('active');
+
+      currentProgram = buildC25KProgram(weekNum);
+      resetWorkout();
+    }
+
+    function switchWorkoutMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-${mode}`).classList.add('active');
+
+      const weekSelector = document.getElementById('c25k-week-selector');
+
+      if (mode === 'hotel') {
+        weekSelector.style.display = 'none';
+        currentProgram = JSON.parse(JSON.stringify(hotelProgram));
+      } else if (mode === 'c25k') {
+        weekSelector.style.display = 'flex';
+        currentProgram = buildC25KProgram(selectedC25KWeek);
+      } else if (mode === 'custom') {
+        weekSelector.style.display = 'none';
+        currentProgram = JSON.parse(JSON.stringify(customProgram));
+      }
+
+      resetWorkout();
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-btn');
+      btn.textContent = soundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF";
+    }
+
+    function promptUserWeight() {
+      const val = prompt("Enter your body weight in lbs (for calorie calculation):", userWeightLbs);
+      if (val && !isNaN(val) && val > 50) {
+        userWeightLbs = parseFloat(val);
+        localStorage.setItem('workout_user_weight', userWeightLbs);
+        updateUI();
+        renderStats(currentStatsFilter);
+      }
+    }
+
+    function saveWorkoutLog() {
+      if (totalSecondsElapsed < 60) return;
+
+      const workoutHistory = JSON.parse(localStorage.getItem('workout_history_logs')) || [];
+      let modeTitle = 'Quick Interval';
+      if (currentMode === 'hotel') modeTitle = '45m Hotel Strength';
+      else if (currentMode === 'c25k') modeTitle = `C25K (Week ${selectedC25KWeek})`;
+
+      const sessionData = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        mode: modeTitle,
+        durationSec: totalSecondsElapsed,
+        calories: Math.round(currentSessionCalories)
+      };
+
+      workoutHistory.unshift(sessionData);
+      localStorage.setItem('workout_history_logs', JSON.stringify(workoutHistory));
+      renderStats(currentStatsFilter);
+    }
+
+    let currentStatsFilter = 'day';
+
+    function renderStats(filter) {
+      currentStatsFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`filter-${filter}`).classList.add('active');
+
+      const history = JSON.parse(localStorage.getItem('workout_history_logs')) || [];
+      const now = new Date();
+
+      const filtered = history.filter(item => {
+        const itemDate = new Date(item.date);
+        if (filter === 'day') {
+          return itemDate.toDateString() === now.toDateString();
+        } else if (filter === 'week') {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          return itemDate >= sevenDaysAgo;
+        } else if (filter === 'month') {
+          return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
+
+      document.getElementById('stat-workouts').textContent = filtered.length;
+      document.getElementById('stat-time').textContent = `${Math.round(filtered.reduce((a, c) => a + c.durationSec, 0) / 60)}m`;
+      document.getElementById('stat-calories').textContent = filtered.reduce((a, c) => a + c.calories, 0);
+
+      const listEl = document.getElementById('history-list');
+      listEl.innerHTML = '';
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 16px;">No workouts recorded for this period yet.</div>';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const d = new Date(item.date);
+        const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const el = document.createElement('div');
+        el.className = 'history-item';
+        el.innerHTML = `
+          <div>
+            <div class="history-item-title">${item.mode}</div>
+            <div class="history-item-date">${dateStr}</div>
+          </div>
+          <div class="history-item-stats">
+            <div>${formatTime(item.durationSec)}</div>
+            <div style="font-size: 11px; color: var(--accent-calories);">🔥 ${item.calories} kcal</div>
+          </div>
+        `;
+        listEl.appendChild(el);
+      });
+    }
+
+    function switchView(view) {
+      if (view === 'timer') {
+        document.getElementById('view-timer-container').style.display = 'flex';
+        document.getElementById('view-stats-container').style.display = 'none';
+        document.getElementById('nav-timer').classList.add('active');
+        document.getElementById('nav-stats').classList.remove('active');
+      } else {
+        document.getElementById('view-timer-container').style.display = 'none';
+        document.getElementById('view-stats-container').style.display = 'block';
+        document.getElementById('nav-stats').classList.add('active');
+        document.getElementById('nav-timer').classList.remove('active');
+        renderStats(currentStatsFilter);
+      }
+    }
+
+    updateUI();
+    renderStats('day');
+  </script>
+</body>
+</html>
