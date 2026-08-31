@@ -553,7 +553,7 @@
 
     function speakText(text) {
       if (!soundEnabled || !('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel(); // Stop any pending speech
+      window.speechSynthesis.cancel(); // Stop pending speech
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.05;
       utterance.pitch = 1.0;
@@ -562,17 +562,18 @@
 
     function alertMinute() { playTone(587.33, 'sine', 0.25); }
     
-    function alert30sWarning() {
-      playTone(440, 'triangle', 0.15, 2, 0.15); // Chime first
-      // Speak next exercise after a short 400ms pause
+    // Announces what is upcoming for ANY step (work, rest, transition)
+    function announceNextExercise() {
       const next = currentProgram[stepIndex + 1];
       if (next && next.duration > 0) {
+        playTone(440, 'triangle', 0.15, 2, 0.15); // Warning chime
         setTimeout(() => {
-          speakText(`Up next: ${next.name}. ${next.subtitle || ''}`);
-        }, 400);
+          let cleanSub = (next.subtitle || '').replace(/[\(\)]/g, '');
+          speakText(`Up next: ${next.name}. ${cleanSub}`);
+        }, 350);
       }
     }
-    
+
     function alertCountdown() { playTone(392, 'square', 0.08); }
     function alertTransition() { playTone(880, 'sine', 0.4); }
 
@@ -580,81 +581,81 @@
     const hotelProgram = [
       { name: "Get Ready", subtitle: "Prepare station & dumbbells", duration: 15, type: "prep", met: 2 },
       { name: "Chin-ups: Set 1", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "90s Neurological recovery", duration: 90, type: "rest", met: 2 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
       { name: "Chin-ups: Set 2", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "Shake out arms", duration: 90, type: "rest", met: 2 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
       { name: "Chin-ups: Set 3", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "Rest full duration", duration: 90, type: "rest", met: 2 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
       { name: "Chin-ups: Set 4", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "Rest full duration", duration: 90, type: "rest", met: 2 },
-      { name: "Chin-ups: Set 5", subtitle: "2 strict reps (10 total!)", duration: 15, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
+      { name: "Chin-ups: Set 5", subtitle: "2 strict reps", duration: 15, type: "work", met: 6.5 },
       { name: "Rest Interval", subtitle: "Prepare for dips", duration: 90, type: "rest", met: 2 },
 
-      { name: "Dips: Set 1", subtitle: "6-8 reps (slow descent)", duration: 25, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
-      { name: "Dips: Set 2", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
-      { name: "Dips: Set 3", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
-      { name: "Rest Interval", subtitle: "90s Rest", duration: 90, type: "rest", met: 2 },
-      { name: "Dips: Set 4", subtitle: "6-8 reps", duration: 25, type: "work", met: 6.5 },
-      { name: "Phase Transition Rest", subtitle: "Set up Lat Pull-downs / Rows", duration: 120, type: "rest", met: 2 },
+      { name: "Dips: Set 1", subtitle: "6 to 8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 2", subtitle: "6 to 8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 3", subtitle: "6 to 8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Rest Interval", subtitle: "90 seconds rest", duration: 90, type: "rest", met: 2 },
+      { name: "Dips: Set 4", subtitle: "6 to 8 reps", duration: 25, type: "work", met: 6.5 },
+      { name: "Phase Transition Rest", subtitle: "Set up Lat Pull-downs or Rows", duration: 120, type: "rest", met: 2 },
 
-      { name: "Lat Pull-downs (R1)", subtitle: "10-12 reps (3s slow return)", duration: 35, type: "work", met: 6.0 },
-      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
-      { name: "Wall Sit (R1)", subtitle: "60s hold (thighs parallel)", duration: 60, type: "work", met: 5.5 },
-      { name: "Superset Rest", subtitle: "Catch breath", duration: 60, type: "rest", met: 2 },
+      { name: "Lat Pull-downs: Set 1", subtitle: "10 to 12 reps with slow return", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Transition to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit: Round 1", subtitle: "60 second hold", duration: 60, type: "work", met: 5.5 },
+      { name: "Superset Rest", subtitle: "60 seconds rest", duration: 60, type: "rest", met: 2 },
 
-      { name: "Lat Pull-downs (R2)", subtitle: "10-12 reps", duration: 35, type: "work", met: 6.0 },
-      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
-      { name: "Wall Sit (R2)", subtitle: "60s hold", duration: 60, type: "work", met: 5.5 },
-      { name: "Superset Rest", subtitle: "Shake out legs", duration: 60, type: "rest", met: 2 },
+      { name: "Lat Pull-downs: Set 2", subtitle: "10 to 12 reps", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Transition to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit: Round 2", subtitle: "60 second hold", duration: 60, type: "work", met: 5.5 },
+      { name: "Superset Rest", subtitle: "60 seconds rest", duration: 60, type: "rest", met: 2 },
 
-      { name: "Lat Pull-downs (R3)", subtitle: "10-12 reps", duration: 35, type: "work", met: 6.0 },
-      { name: "Quick Rest", subtitle: "Walk to wall", duration: 45, type: "rest", met: 2 },
-      { name: "Wall Sit (R3)", subtitle: "Final 60s hold!", duration: 60, type: "work", met: 5.5 },
-      { name: "Phase Transition Rest", subtitle: "Prep for Conditioning Finisher", duration: 120, type: "rest", met: 2 },
+      { name: "Lat Pull-downs: Set 3", subtitle: "10 to 12 reps", duration: 35, type: "work", met: 6.0 },
+      { name: "Quick Rest", subtitle: "Transition to wall", duration: 45, type: "rest", met: 2 },
+      { name: "Wall Sit: Round 3", subtitle: "Final 60 second hold", duration: 60, type: "work", met: 5.5 },
+      { name: "Phase Transition Rest", subtitle: "Prepare for conditioning finisher", duration: 120, type: "rest", met: 2 },
 
-      { name: "Push-ups", subtitle: "8-10 strict reps", duration: 25, type: "work", met: 7.0 },
-      { name: "Forearm Plank", subtitle: "90-Second Isometric Hold", duration: 90, type: "work", met: 5.0 },
-      { name: "Jump Rope / Burpees", subtitle: "50 jumps or 6 burpees", duration: 45, type: "work", met: 8.5 },
-      { name: "Workout Complete!", subtitle: "Great work! Session logged.", duration: 0, type: "prep", met: 1 }
+      { name: "Push-ups", subtitle: "8 to 10 strict reps", duration: 25, type: "work", met: 7.0 },
+      { name: "Forearm Plank", subtitle: "90 second hold", duration: 90, type: "work", met: 5.0 },
+      { name: "Jump Rope or Burpees", subtitle: "50 jumps or 6 burpees", duration: 45, type: "work", met: 8.5 },
+      { name: "Workout Complete", subtitle: "Session logged. Great work!", duration: 0, type: "prep", met: 1 }
     ];
 
     function buildC25KProgram(week) {
       const warmUp = { name: "Warm-Up Walk", subtitle: "Brisk 5-minute walk", duration: 300, type: "prep", met: 3.5 };
       const coolDown = { name: "Cool-Down Walk", subtitle: "Easy walk to bring heart rate down", duration: 180, type: "prep", met: 3.0 };
-      const finished = { name: "Run Complete!", subtitle: "Great endurance progress!", duration: 0, type: "prep", met: 1 };
+      const finished = { name: "Run Complete", subtitle: "Great endurance progress!", duration: 0, type: "prep", met: 1 };
       
       let intervals = [];
       if (week === 1) {
         for (let i = 1; i <= 4; i++) {
-          intervals.push({ name: `Run Interval ${i}/4`, subtitle: "Conversational slow pace", duration: 300, type: "work", met: 8.5 });
-          if (i < 4) intervals.push({ name: `Walk Recovery ${i}/4`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+          intervals.push({ name: `Run Interval ${i} of 4`, subtitle: "5 minute run at conversational pace", duration: 300, type: "work", met: 8.5 });
+          if (i < 4) intervals.push({ name: `Walk Recovery ${i} of 4`, subtitle: "2 minute recovery walk", duration: 120, type: "rest", met: 3.5 });
         }
       } else if (week === 2) {
         for (let i = 1; i <= 3; i++) {
-          intervals.push({ name: `Run Interval ${i}/3`, subtitle: "Smooth rhythmic breathing", duration: 360, type: "work", met: 8.5 });
-          if (i < 3) intervals.push({ name: `Walk Recovery ${i}/3`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+          intervals.push({ name: `Run Interval ${i} of 3`, subtitle: "6 minute run", duration: 360, type: "work", met: 8.5 });
+          if (i < 3) intervals.push({ name: `Walk Recovery ${i} of 3`, subtitle: "2 minute walk", duration: 120, type: "rest", met: 3.5 });
         }
       } else if (week === 3) {
         for (let i = 1; i <= 3; i++) {
-          intervals.push({ name: `Run Interval ${i}/3`, subtitle: "Stay relaxed, light foot strikes", duration: 480, type: "work", met: 8.5 });
-          if (i < 3) intervals.push({ name: `Walk Recovery ${i}/3`, subtitle: "Active recovery walk", duration: 120, type: "rest", met: 3.5 });
+          intervals.push({ name: `Run Interval ${i} of 3`, subtitle: "8 minute run", duration: 480, type: "work", met: 8.5 });
+          if (i < 3) intervals.push({ name: `Walk Recovery ${i} of 3`, subtitle: "2 minute walk", duration: 120, type: "rest", met: 3.5 });
         }
       } else if (week === 4) {
-        intervals.push({ name: "Run Block 1/2", subtitle: "10 minutes steady run", duration: 600, type: "work", met: 8.5 });
-        intervals.push({ name: "Walk Recovery", subtitle: "90 seconds deep breathing", duration: 90, type: "rest", met: 3.5 });
-        intervals.push({ name: "Run Block 2/2", subtitle: "10 minutes steady run", duration: 600, type: "work", met: 8.5 });
+        intervals.push({ name: "Run Block 1 of 2", subtitle: "10 minute steady run", duration: 600, type: "work", met: 8.5 });
+        intervals.push({ name: "Walk Recovery", subtitle: "90 seconds walking break", duration: 90, type: "rest", met: 3.5 });
+        intervals.push({ name: "Run Block 2 of 2", subtitle: "10 minute steady run", duration: 600, type: "work", met: 8.5 });
       } else if (week === 5) {
-        intervals.push({ name: "Run Block 1", subtitle: "15 minutes continuous", duration: 900, type: "work", met: 8.5 });
-        intervals.push({ name: "Walk Recovery", subtitle: "2 minutes active walk", duration: 120, type: "rest", met: 3.5 });
-        intervals.push({ name: "Run Block 2", subtitle: "10 minutes strong finish", duration: 600, type: "work", met: 8.5 });
+        intervals.push({ name: "Run Block 1", subtitle: "15 minutes continuous run", duration: 900, type: "work", met: 8.5 });
+        intervals.push({ name: "Walk Recovery", subtitle: "2 minute walk", duration: 120, type: "rest", met: 3.5 });
+        intervals.push({ name: "Run Block 2", subtitle: "10 minute run to finish", duration: 600, type: "work", met: 8.5 });
       } else if (week === 6) {
-        intervals.push({ name: "Run Block 1", subtitle: "20 minutes continuous endurance", duration: 1200, type: "work", met: 8.5 });
+        intervals.push({ name: "Run Block 1", subtitle: "20 minutes continuous run", duration: 1200, type: "work", met: 8.5 });
         intervals.push({ name: "Walk Recovery", subtitle: "1 minute quick walk", duration: 60, type: "rest", met: 3.5 });
-        intervals.push({ name: "Run Block 2", subtitle: "10 minutes final push", duration: 600, type: "work", met: 8.5 });
+        intervals.push({ name: "Run Block 2", subtitle: "10 minute final push", duration: 600, type: "work", met: 8.5 });
       } else if (week === 7) {
-        intervals.push({ name: "Continuous 5K Run", subtitle: "Pacing yourself through full 5K!", duration: 1800, type: "work", met: 8.5 });
+        intervals.push({ name: "Continuous 5K Run", subtitle: "30 minutes continuous pacing", duration: 1800, type: "work", met: 8.5 });
       }
       return [warmUp, ...intervals, coolDown, finished];
     }
@@ -758,6 +759,10 @@
       document.getElementById('btn-start').style.background = "#f59e0b";
       requestWakeLock();
 
+      // Announce current step on start
+      const cur = currentProgram[stepIndex];
+      speakText(`${cur.name}. ${cur.subtitle || ''}`);
+
       timerInterval = setInterval(() => {
         totalSecondsElapsed++;
         timeRemaining--;
@@ -765,8 +770,20 @@
         const activeMet = currentProgram[stepIndex].met || 4;
         currentSessionCalories += calculateStepCalories(activeMet, 1);
 
+        // Chime every full minute
         if (timeRemaining > 0 && timeRemaining % 60 === 0) alertMinute();
-        if (timeRemaining === 30) alert30sWarning();
+
+        // Standard 30s announcement for long blocks (>30s)
+        const curDur = currentProgram[stepIndex].duration;
+        if (curDur > 30 && timeRemaining === 30) {
+          announceNextExercise();
+        } 
+        // 10s announcement for short sets (15s to 30s)
+        else if (curDur <= 30 && curDur > 10 && timeRemaining === 10) {
+          announceNextExercise();
+        }
+
+        // 3-2-1 Countdown
         if (timeRemaining <= 3 && timeRemaining > 0) alertCountdown();
 
         if (timeRemaining <= 0) {
@@ -791,6 +808,10 @@
         stepIndex++;
         timeRemaining = currentProgram[stepIndex].duration;
         updateUI();
+        
+        // Immediate voice prompt of newly started step
+        const cur = currentProgram[stepIndex];
+        speakText(`${cur.name}`);
       } else {
         finishWorkout();
       }
@@ -801,6 +822,8 @@
         stepIndex--;
         timeRemaining = currentProgram[stepIndex].duration;
         updateUI();
+        const cur = currentProgram[stepIndex];
+        speakText(`${cur.name}`);
       }
     }
 
@@ -809,6 +832,7 @@
       document.getElementById('btn-start').textContent = "Start";
       document.getElementById('timer-text').textContent = "DONE";
       setProgress(0);
+      speakText("Workout complete. Fantastic job!");
       saveWorkoutLog();
     }
 
@@ -823,6 +847,7 @@
       updateUI();
     }
 
+    // Modal Edit Functions
     function openEditModal() {
       const cur = currentProgram[stepIndex];
       document.getElementById('modal-edit-name').value = cur.name;
@@ -883,6 +908,9 @@
       soundEnabled = !soundEnabled;
       const btn = document.getElementById('sound-btn');
       btn.textContent = soundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF";
+      if (!soundEnabled && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     }
 
     function promptUserWeight() {
